@@ -685,24 +685,68 @@ struct DialEmblem: View {
     }
 
     private var ticks: some View {
-        Canvas { ctx, sz in
-            let center = CGPoint(x: sz.width / 2, y: sz.height / 2)
-            let radius = min(sz.width, sz.height) / 2 - sz.width * 0.075
-            for i in 0..<60 {
-                let major = i % 5 == 0
-                let angle = Double(i) / 60 * 2 * .pi - .pi / 2
-                let inner = radius - (major ? size * 0.05 : size * 0.028)
-                var path = Path()
-                path.move(to: CGPoint(x: center.x + cos(angle) * inner, y: center.y + sin(angle) * inner))
-                path.addLine(to: CGPoint(x: center.x + cos(angle) * radius, y: center.y + sin(angle) * radius))
-                ctx.stroke(
+        Canvas { context: GraphicsContext, canvasSize: CGSize in
+            let center = CGPoint(
+                x: canvasSize.width / 2,
+                y: canvasSize.height / 2
+            )
+
+            let radius: CGFloat =
+                min(canvasSize.width, canvasSize.height) / 2
+                - canvasSize.width * 0.075
+
+            for index in 0..<60 {
+                let isMajor = index % 5 == 0
+
+                let angle: Double =
+                    (Double(index) / 60.0) * 2.0 * Double.pi
+                    - Double.pi / 2.0
+
+                let inset: CGFloat = isMajor
+                    ? self.size * 0.05
+                    : self.size * 0.028
+
+                let innerRadius: CGFloat = radius - inset
+
+                let path = Self.makeTickPath(
+                    center: center,
+                    innerRadius: innerRadius,
+                    outerRadius: radius,
+                    angle: angle
+                )
+
+                let tickColor: Color = isMajor
+                    ? Tint.brass.opacity(0.85)
+                    : Color.primary.opacity(0.16)
+
+                let tickWidth: CGFloat = isMajor ? 1.3 : 0.7
+
+                context.stroke(
                     path,
-                    with: .color(major ? Tint.brass.opacity(0.85) : Color.primary.opacity(0.16)),
-                    lineWidth: major ? 1.3 : 0.7
+                    with: .color(tickColor),
+                    lineWidth: tickWidth
                 )
             }
         }
         .allowsHitTesting(false)
+    }
+
+    private static func makeTickPath(
+        center: CGPoint,
+        innerRadius: CGFloat,
+        outerRadius: CGFloat,
+        angle: Double
+    ) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(
+            x: center.x + cos(angle) * innerRadius,
+            y: center.y + sin(angle) * innerRadius
+        ))
+        path.addLine(to: CGPoint(
+            x: center.x + cos(angle) * outerRadius,
+            y: center.y + sin(angle) * outerRadius
+        ))
+        return path
     }
 
     private func sweep(at seconds: TimeInterval) -> some View {
