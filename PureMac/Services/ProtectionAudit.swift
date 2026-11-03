@@ -1,36 +1,4 @@
 
-enum ProtectionCommand: CaseIterable, Hashable, Sendable {
-    case gatekeeper
-    case fileVault
-    case firewall
-    case systemIntegrityProtection
-
-    var executableURL: URL {
-        switch self {
-        case .gatekeeper:
-            return URL(fileURLWithPath: "/usr/sbin/spctl")
-        case .fileVault:
-            return URL(fileURLWithPath: "/usr/bin/fdesetup")
-        case .firewall:
-            return URL(fileURLWithPath: "/usr/libexec/ApplicationFirewall/socketfilterfw")
-        case .systemIntegrityProtection:
-            return URL(fileURLWithPath: "/usr/bin/csrutil")
-        }
-    }
-
-    var arguments: [String] {
-        switch self {
-        case .gatekeeper:
-            return ["--status"]
-        case .fileVault:
-            return ["status"]
-        case .firewall:
-            return ["--getglobalstate"]
-        case .systemIntegrityProtection:
-            return ["status"]
-        }
-    }
-
     var check: ProtectionCheck {
         switch self {
         case .gatekeeper:
@@ -122,10 +90,7 @@ private final class ProtectionProcessController: @unchecked Sendable {
 }
 
 enum ProtectionCommandRunner {
-    static func run(
-        _ command: ProtectionCommand,
-        timeout: TimeInterval = 4
-    ) async -> ProtectionCommandResult {
+    static func run(_ command: ProtectionCommand, timeout: TimeInterval = 4) async -> ProtectionCommandResult {
         await run(
             ProtectionProcessRequest(
                 executableURL: command.executableURL,
@@ -144,11 +109,7 @@ enum ProtectionCommandRunner {
             await withCheckedContinuation { continuation in
                 DispatchQueue.global(qos: .utility).async {
                     continuation.resume(
-                        returning: runBlocking(
-                            request,
-                            timeout: max(timeout, 0),
-                            controller: controller
-                        )
+                        returning: runBlocking(request, timeout: max(timeout, 0), controller: controller)
                     )
                 }
             }
@@ -190,3 +151,41 @@ enum ProtectionCommandRunner {
         }
 
         do {
+            try process.run()
+        } catch {
+            return ProtectionCommandResult(
+                exitCode: nil,
+                stdout: "",
+                stderr: "",
+                timedOut: false,
+                cancelled: controller.isCancelled,
+                launchError: error.localizedDescription
+            )
+        }
+
+        if controller.isCancelled {
+            controller.cancel()
+        }
+
+        drain(outputPipe.fileHandleForReading, into: output, group: readers)
+        drain(errorPipe.fileHandleForReading, into: errors, group: readers)
+
+        let deadline = DispatchTime.now() + timeout
+        var exited = exitSignal.wait(timeout: deadline) == .success
+        let timedOut = !exited
+
+        if !exited {
+            process.terminate()
+            exited = exitSignal.wait(timeout: .now() + 0.25) == .success
+        }
+
+        if !exited {
+            Darwin.kill(process.processIdentifier, SIGKILL)
+            exited = exitSignal.wait(timeout: .now() + 0.75) == .success
+        }
+
+        if readers.wait(timeout: .now() + 0.25) == .timedOut {
+            try? outputPipe.fileHandleForReading.close()
+            try? errorPipe.fileHandleForReading.close()
+            _ = readers.wait(timeout: .now() + 0.25)
+        }
