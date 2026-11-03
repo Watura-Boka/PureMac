@@ -685,7 +685,7 @@ struct DialEmblem: View {
     }
 
     private var ticks: some View {
-        Canvas { context: GraphicsContext, canvasSize: CGSize in
+        Canvas { (context: GraphicsContext, canvasSize: CGSize) in
             let center = CGPoint(
                 x: canvasSize.width / 2,
                 y: canvasSize.height / 2
@@ -737,15 +737,21 @@ struct DialEmblem: View {
         outerRadius: CGFloat,
         angle: Double
     ) -> Path {
+        let cosine = CGFloat(cos(angle))
+        let sine = CGFloat(sin(angle))
+
+        let startPoint = CGPoint(
+            x: center.x + cosine * innerRadius,
+            y: center.y + sine * innerRadius
+        )
+        let endPoint = CGPoint(
+            x: center.x + cosine * outerRadius,
+            y: center.y + sine * outerRadius
+        )
+
         var path = Path()
-        path.move(to: CGPoint(
-            x: center.x + cos(angle) * innerRadius,
-            y: center.y + sin(angle) * innerRadius
-        ))
-        path.addLine(to: CGPoint(
-            x: center.x + cos(angle) * outerRadius,
-            y: center.y + sin(angle) * outerRadius
-        ))
+        path.move(to: startPoint)
+        path.addLine(to: endPoint)
         return path
     }
 
