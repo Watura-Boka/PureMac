@@ -33,8 +33,9 @@ struct ConfettiView: View {
                     guard let start else { return }
                     let t = timeline.date.timeIntervalSince(start)
                     guard t <= duration else { return }
-                    for p in particles {
-                        draw(p, at: t, in: size, ctx: &ctx)
+
+                    for particle in particles {
+                        draw(particle, at: t, in: size, ctx: ctx)
                     }
                 }
             }
@@ -50,6 +51,7 @@ struct ConfettiView: View {
 
     private func fire(in size: CGSize) {
         guard !reduceMotion, size.width > 0 else { return }
+
         switch mode {
         case .rain:
             particles = (0..<90).map { _ in Particle.random(width: size.width) }
@@ -57,61 +59,100 @@ struct ConfettiView: View {
             let point = CGPoint(x: size.width * origin.x, y: size.height * origin.y)
             particles = (0..<90).map { _ in Particle.burst(from: point) }
         }
+
         start = Date()
         generation += 1
-        let g = generation
+        let currentGeneration = generation
+
         // Quiet the timeline once the burst has fully faded so we don't keep
-        // re-rendering an empty canvas. Guard on `generation` so a later burst
+        // re-rendering an empty canvas. Guard on generation so a later burst
         // isn't cut short by an earlier burst's cleanup timer.
         DispatchQueue.main.asyncAfter(deadline: .now() + duration + 0.1) {
-            guard generation == g else { return }
+            guard generation == currentGeneration else { return }
             start = nil
             particles = []
         }
     }
 
-    private func draw(_ p: Particle, at t: Double, in size: CGSize, ctx: inout GraphicsContext) {
+    private func draw(
+        _ particle: Particle,
+        at time: Double,
+        in size: CGSize,
+        ctx: GraphicsContext
+    ) {
         // Vertical: initial downward velocity + gravity. Horizontal: drift +
         // a sine sway so pieces flutter instead of dropping like stones.
-        let x = p.x0 + p.drift * t + p.swayAmp * sin(p.swayFreq * t + p.phase)
-        let y = p.y0 + p.vy0 * t + 0.5 * p.gravity * t * t
+        let x = particle.x0
+            + particle.drift * time
+            + particle.swayAmp * sin(particle.swayFreq * time + particle.phase)
+        let y = particle.y0
+            + particle.vy0 * time
+            + 0.5 * particle.gravity * time * time
 
         guard y < size.height + 40 else { return }
 
         let fade: Double
-        if t > p.fadeStart {
-            fade = max(0, 1 - (t - p.fadeStart) / (duration - p.fadeStart))
+        if time > particle.fadeStart {
+            fade = max(0, 1 - (time - particle.fadeStart) / (duration - particle.fadeStart))
         } else {
             fade = 1
         }
         guard fade > 0.01 else { return }
 
-        let angle = p.spin * t
+        let angle = particle.spin * time
         // Tumble: squash one axis on a cosine so pieces appear to flip in 3D.
-        let tumble = abs(cos(p.tumbleSpeed * t + p.phase))
-        let w = p.size.width * (0.25 + 0.75 * tumble)
-        let h = p.size.height
+        let tumble = abs(cos(particle.tumbleSpeed * time + particle.phase))
+        let width = particle.size.width * (0.25 + 0.75 * tumble)
+        let height = particle.size.height
 
-        var sub = ctx
-        sub.translateBy(x: x, y: y)
-        sub.rotate(by: .radians(angle))
-        sub.opacity = fade
+        var subcontext = ctx
+        subcontext.translateBy(x: x, y: y)
+        subcontext.rotate(by: .radians(angle))
+        subcontext.opacity = fade
 
-        let rect = CGRect(x: -w / 2, y: -h / 2, width: w, height: h)
-        switch p.shape {
+        let rect = CGRect(
+            x: -width / 2,
+            y: -height / 2,
+            width: width,
+            height: height
+        )
+
+        switch particle.shape {
         case .streamer:
-            sub.fill(Path(roundedRect: rect, cornerRadius: min(w, h) * 0.45), with: .color(p.color))
+            subcontext.fill(
+                Path(roundedRect: rect, cornerRadius: min(width, height) * 0.45),
+                with: .color(particle.color)
+            )
         case .disc:
-            sub.fill(Path(ellipseIn: CGRect(x: -h / 2, y: -h / 2, width: h, height: h)), with: .color(p.color))
+            let discRect = CGRect(
+                x: -height / 2,
+                y: -height / 2,
+                width: height,
+                height: height
+            )
+            subcontext.fill(Path(ellipseIn: discRect), with: .color(particle.color))
         case .ring:
-            let r = h / 2
-            let ring = Path(ellipseIn: CGRect(x: -r, y: -r, width: h, height: h))
-            sub.stroke(ring, with: .color(p.color), lineWidth: max(1.4, h * 0.22))
+            let radius = height / 2
+            let ring = Path(ellipseIn: CGRect(
+                x: -radius,
+                y: -radius,
+                width: height,
+                height: height
+            ))
+            subcontext.stroke(
+                ring,
+                with: .color(particle.color),
+                lineWidth: max(1.4, height * 0.22)
+            )
         }
     }
 }
 
-private enum ConfettiShape: CaseIterable { case streamer, disc, ring }
+private enum ConfettiShape: CaseIterable {
+    case streamer
+    case disc
+    case ring
+}
 
 private struct Particle {
     var x0: CGFloat
@@ -139,20 +180,23 @@ private struct Particle {
         Color(red: 0.36, green: 0.80, blue: 0.94),  // cyan
     ]
 
-    /// Radial explosion from a fixed point. Same physics as the rain mode —
-    /// the polar launch velocity plus the existing gravity term naturally
-    /// produces the arc — with an upward bias so the burst blooms before it
-    /// falls, and an earlier fade so pieces don't litter the screen.
+    /// Radial explosion from a fixed point.
     static func burst(from point: CGPoint) -> Particle {
         let shape = ConfettiShape.allCases.randomElement()!
-        let dim: CGSize
+        let dimensions: CGSize
+
         switch shape {
-        case .streamer: dim = CGSize(width: .random(in: 5...8), height: .random(in: 11...16))
-        case .disc:     dim = CGSize(width: 9, height: .random(in: 7...10))
-        case .ring:     dim = CGSize(width: 10, height: .random(in: 9...13))
+        case .streamer:
+            dimensions = CGSize(width: .random(in: 5...8), height: .random(in: 11...16))
+        case .disc:
+            dimensions = CGSize(width: 9, height: .random(in: 7...10))
+        case .ring:
+            dimensions = CGSize(width: 10, height: .random(in: 9...13))
         }
+
         let angle = Double.random(in: 0...(2 * .pi))
         let speed = Double.random(in: 160...340)
+
         return Particle(
             x0: point.x,
             y0: point.y,
@@ -166,19 +210,24 @@ private struct Particle {
             tumbleSpeed: .random(in: 2.5...5.5),
             fadeStart: .random(in: 1.0...1.5),
             color: palette.randomElement()!,
-            size: dim,
+            size: dimensions,
             shape: shape
         )
     }
 
     static func random(width: CGFloat) -> Particle {
         let shape = ConfettiShape.allCases.randomElement()!
-        let dim: CGSize
+        let dimensions: CGSize
+
         switch shape {
-        case .streamer: dim = CGSize(width: .random(in: 5...8), height: .random(in: 11...16))
-        case .disc:     dim = CGSize(width: 9, height: .random(in: 7...10))
-        case .ring:     dim = CGSize(width: 10, height: .random(in: 9...13))
+        case .streamer:
+            dimensions = CGSize(width: .random(in: 5...8), height: .random(in: 11...16))
+        case .disc:
+            dimensions = CGSize(width: 9, height: .random(in: 7...10))
+        case .ring:
+            dimensions = CGSize(width: 10, height: .random(in: 9...13))
         }
+
         return Particle(
             x0: .random(in: 0...width),
             y0: .random(in: -60 ... -10),
@@ -192,7 +241,7 @@ private struct Particle {
             tumbleSpeed: .random(in: 2.5...5.5),
             fadeStart: .random(in: 1.3...1.9),
             color: palette.randomElement()!,
-            size: dim,
+            size: dimensions,
             shape: shape
         )
     }
