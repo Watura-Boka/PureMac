@@ -49,7 +49,7 @@ struct AppUpdatesView: View {
 
     var body: some View {
         ZStack {
-            Color(nsColor: .windowBackgroundColor)
+            Palette.canvas
                 .ignoresSafeArea()
 
             ScrollView {

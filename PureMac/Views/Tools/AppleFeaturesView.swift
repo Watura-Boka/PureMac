@@ -133,7 +133,7 @@ struct AppleFeaturesView: View {
                 }
             }
             .padding(9)
-            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 7))
+            .background(Palette.surface, in: RoundedRectangle(cornerRadius: 7))
             .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(Color.primary.opacity(0.12), lineWidth: 0.5))
 
             if features.isEmpty {

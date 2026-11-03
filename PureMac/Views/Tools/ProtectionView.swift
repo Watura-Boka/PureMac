@@ -18,7 +18,7 @@ struct ProtectionView: View {
 
     var body: some View {
         ZStack {
-            Color(nsColor: .windowBackgroundColor)
+            Palette.canvas
                 .ignoresSafeArea()
 
             ScrollView {
@@ -47,7 +47,7 @@ struct ProtectionView: View {
         HStack(alignment: .top, spacing: 24) {
             VStack(alignment: .leading, spacing: 7) {
                 Text("Protection")
-                    .font(.system(size: 28, weight: .bold))
+                    .font(Typo.display(30))
                 Text("Review the macOS safeguards that protect apps, disks, network access, and system files.")
                     .font(.system(size: 13))
                     .foregroundStyle(.secondary)

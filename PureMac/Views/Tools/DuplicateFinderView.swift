@@ -36,7 +36,7 @@ struct DuplicateFinderView: View {
 
     var body: some View {
         ZStack {
-            Color(nsColor: .windowBackgroundColor)
+            Palette.canvas
                 .ignoresSafeArea()
             VStack(spacing: 14) {
                 header
