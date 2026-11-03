@@ -131,7 +131,7 @@ struct SpaceExplorerView: View {
         }
         .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Palette.canvas)
         .navigationTitle("Space Explorer")
         .onDisappear {
             model.cancel()

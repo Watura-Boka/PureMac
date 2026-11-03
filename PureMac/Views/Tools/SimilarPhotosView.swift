@@ -112,7 +112,7 @@ struct SimilarPhotosView: View {
 
     var body: some View {
         ZStack {
-            Color(nsColor: .windowBackgroundColor)
+            Palette.canvas
                 .ignoresSafeArea()
 
             ScrollView {
@@ -493,7 +493,7 @@ private struct SimilarPhotoTile: View {
         .padding(10)
         .background {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color(nsColor: .controlBackgroundColor).opacity(0.7))
+                .fill(Palette.surface.opacity(0.7))
         }
         .overlay {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
