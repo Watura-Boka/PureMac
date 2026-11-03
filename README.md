@@ -1,9 +1,9 @@
 <p align="center">
-  <img src="screenshots/smart-care.png" alt="PureMac Smart Care - storage overview and cleanup review" width="820">
+  <img src="screenshots/smart-care.png" alt="PureMac Overview - storage and cleanup review" width="820">
 </p>
 
 <p align="center">
-  <img src="screenshots/smart-care-dark.png" alt="PureMac Smart Care in dark appearance" width="820">
+  <img src="screenshots/smart-care-dark.png" alt="PureMac Overview in dark appearance" width="820">
 </p>
 
 <p align="center">
@@ -143,7 +143,7 @@ Smart Scan checks each category in sequence and reports progress as files are fo
 - **Mail Files** - downloaded mail attachments
 - **Trash Bins** - empties all bins, including external volumes
 - **Large & Old Files** - >100 MB or older than 1 year (never auto-selected)
-- **Xcode Junk** - DerivedData, Archives, simulator caches, and downloaded simulator runtimes (deleted via `simctl runtime delete`; never auto-selected)
+- **Xcode Junk** - DerivedData, Archives, simulator caches, downloaded simulator runtimes (deleted via `simctl runtime delete`; never auto-selected), and XcodeBuildMCP or MobileBuildMCP DerivedData (never auto-selected, so scheduled cleanup leaves it alone; manual cleanup moves it to the Trash while holding the tool's storage lock, which does not detect a running build)
 - **Brew Cache** - Homebrew download caches within approved cache locations
 - **Node Cache** - npm, yarn classic, pnpm content-addressable store
 - **Docker Cache** - images, containers, build cache
@@ -151,6 +151,12 @@ Smart Scan checks each category in sequence and reports progress as files are fo
 > **On "purgeable space":** PureMac shows your APFS purgeable space in the storage breakdown for transparency, but it deliberately does **not** list it as junk to delete. Purgeable space is reserved and reclaimed by macOS itself - no third-party app can reliably free it, and even the Finder's purgeable figure is known to be inaccurate. Cleaners that claim to "reclaim purgeable space" are overpromising. We'd rather be honest than impressive.
 
 ### Storage and file review
+
+**Apple Features** brings together the supported controls for Siri, Apple Intelligence, Image Playground, Genmoji, writing assistance, summaries, inline predictions, analytics, and personalized ads. Instructions follow the installed macOS version and open the relevant Settings pane or app. PureMac cannot reliably read or change these protected switches itself; opening Settings never marks a feature disabled.
+
+The **Storage** tab in Apple Features measures known model assets, downloaded screen savers, GarageBand support files, Apple Loops, and local device backups. Missing, inaccessible, and partial results are distinguished. System-managed content is shown for review and is excluded from cleanup totals. Model storage is not promised as recoverable space. See the [Apple controls and storage research](docs/APPLE-FEATURES.md) for sources and version limits.
+
+Local iPhone and iPad backups have a separate manual review. Nothing is preselected or scheduled. Selected backups move to the Trash after confirmation and fresh checks for changes, symbolic links, and exclusions. Keep any backup you may need to restore a device; space is not reclaimed until the Trash is emptied.
 
 **Space Explorer** measures the allocated space inside a folder you choose. Drill into directories, compare their sizes, and reveal an item in Finder. Packages are measured without exposing their contents as navigable folders. Skipped and inaccessible items are reported.
 
@@ -164,7 +170,7 @@ Cleanup results support name/path search, size and age filters, sorting, and sel
 
 **Protection** checks Gatekeeper, FileVault, the application firewall, System Integrity Protection, and installed XProtect metadata. A failed or unavailable check stays unknown. It also provides shortcuts to privacy and permission settings. This is a configuration audit, not an antivirus or malware scanner.
 
-**Performance** shows CPU and memory information, lists third-party launch-agent/daemon definitions, and lists local snapshots. A launch definition is not proof that a process is running. You can open Login Items or Activity Monitor and delete a specific Time Machine local snapshot after confirmation. Snapshot sizes are not estimated, and system update snapshots cannot be removed here.
+**Performance** includes a collapsible CPU–Memory card with live app/process usage, app icons, sorting, search and helper grouping. CPU percentages use the Mac’s total capacity; memory shows resident usage, so shared pages can appear in more than one process. Process sampling pauses when the card is closed or the Performance window loses focus. Summary sampling also stops outside the active Performance page unless the menu-bar system monitor is enabled. Startup/background items have their own collapsible card, and local snapshots are listed separately. A launch definition is not proof that a process is running. You can open Login Items or Activity Monitor and delete a specific Time Machine local snapshot after confirmation. Snapshot sizes are not estimated, and system update snapshots cannot be removed here.
 
 ### App updates
 
@@ -172,6 +178,12 @@ Check for updates to Homebrew-managed cask apps and choose which ones to upgrade
 
 ### Scheduled Cleaning
 Optional. Configurable interval (hourly to monthly), with auto-clean threshold so background runs only fire when there's something meaningful to remove.
+
+### Settings
+
+Open **Settings** using the gear in the sidebar or the standard macOS Settings command. General settings include language (including Italian), System/Light/Dark appearance, Full Disk Access status and recheck, startup, menu-bar monitoring, sound and safety. Cleaning and scheduled scanning keep their existing preferences.
+
+The **Updates** tab shows the installed version and build and checks official GitHub app releases on request. CLI releases, drafts and prereleases are excluded. Choose the update method for Homebrew instructions or a DMG/ZIP download link. The check reports availability; it does not install an update or run Homebrew.
 
 ## Permissions
 
@@ -200,9 +212,13 @@ Give it a minute to re-seed, then open PureMac once. If it still sticks, a resta
 
 ## Screenshots
 
-| Smart Care | Dark appearance |
+| Overview | Dark appearance |
 |---|---|
-| ![Smart Care](screenshots/smart-care.png) | ![Dark appearance](screenshots/smart-care-dark.png) |
+| ![Overview](screenshots/smart-care.png) | ![Dark appearance](screenshots/smart-care-dark.png) |
+
+| Apple Features | Apple Storage |
+|---|---|
+| ![Apple Features](screenshots/apple-features.png) | ![Apple Storage](screenshots/apple-storage.png) |
 
 | Space Explorer | Duplicate Finder |
 |---|---|

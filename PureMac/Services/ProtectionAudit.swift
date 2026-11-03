@@ -1,4 +1,4 @@
-import Darwin
+code = r'''import Darwin
 import Foundation
 
 enum ProtectionCheck: String, CaseIterable, Identifiable, Sendable {
@@ -154,7 +154,10 @@ private final class ProtectionProcessController: @unchecked Sendable {
 }
 
 enum ProtectionCommandRunner {
-    static func run(_ command: ProtectionCommand, timeout: TimeInterval = 4) async -> ProtectionCommandResult {
+    static func run(
+        _ command: ProtectionCommand,
+        timeout: TimeInterval = 4
+    ) async -> ProtectionCommandResult {
         await run(
             ProtectionProcessRequest(
                 executableURL: command.executableURL,
@@ -173,7 +176,11 @@ enum ProtectionCommandRunner {
             await withCheckedContinuation { continuation in
                 DispatchQueue.global(qos: .utility).async {
                     continuation.resume(
-                        returning: runBlocking(request, timeout: max(timeout, 0), controller: controller)
+                        returning: runBlocking(
+                            request,
+                            timeout: max(timeout, 0),
+                            controller: controller
+                        )
                     )
                 }
             }
@@ -274,7 +281,10 @@ enum ProtectionCommandRunner {
             defer { group.leave() }
             while true {
                 do {
-                    guard let chunk = try handle.read(upToCount: 4_096), !chunk.isEmpty else { return }
+                    guard let chunk = try handle.read(upToCount: 4_096),
+                          !chunk.isEmpty else {
+                        return
+                    }
                     buffer.append(chunk)
                 } catch {
                     return
@@ -285,15 +295,20 @@ enum ProtectionCommandRunner {
 }
 
 struct ProtectionAudit: Sendable {
-    typealias CommandExecutor = @Sendable (ProtectionCommand) async -> ProtectionCommandResult
+    typealias CommandExecutor =
+        @Sendable (ProtectionCommand) async -> ProtectionCommandResult
     typealias XProtectInspector = @Sendable () -> ProtectionFinding
 
     private let commandExecutor: CommandExecutor
     private let xProtectInspector: XProtectInspector
 
     init(
-        commandExecutor: @escaping CommandExecutor = { await ProtectionCommandRunner.run($0) },
-        xProtectInspector: @escaping XProtectInspector = { ProtectionAudit.inspectXProtect() }
+        commandExecutor: @escaping CommandExecutor = {
+            await ProtectionCommandRunner.run($0)
+        },
+        xProtectInspector: @escaping XProtectInspector = {
+            ProtectionAudit.inspectXProtect()
+        }
     ) {
         self.commandExecutor = commandExecutor
         self.xProtectInspector = xProtectInspector
@@ -313,6 +328,7 @@ struct ProtectionAudit: Sendable {
             systemIntegrityProtection,
             xProtect
         ]
+
         return ProtectionSnapshot(findings: findings, checkedAt: Date())
     }
 
@@ -320,48 +336,93 @@ struct ProtectionAudit: Sendable {
         Self.parse(command.check, result: await commandExecutor(command))
     }
 
-    static func parse(_ check: ProtectionCheck, result: ProtectionCommandResult) -> ProtectionFinding {
+    static func parse(
+        _ check: ProtectionCheck,
+        result: ProtectionCommandResult
+    ) -> ProtectionFinding {
         guard result.succeeded else {
             return ProtectionFinding(
                 check: check,
                 status: .unknown,
-                detail: result.timedOut ? "The check timed out." : "PureMac could not read this setting.",
+                detail: result.timedOut
+                    ? String(localized: "The check timed out.")
+                    : String(localized: "PureMac could not read this setting."),
                 version: nil
             )
         }
 
         let output = "\(result.stdout)\n\(result.stderr)".lowercased()
+
         switch check {
         case .gatekeeper:
             if output.contains("assessments enabled") {
-                return finding(check, .enabled, "App downloads are checked before opening.")
+                return finding(
+                    check,
+                    .enabled,
+                    String(localized: "App downloads are checked before opening.")
+                )
             }
             if output.contains("assessments disabled") {
-                return finding(check, .disabled, "Downloaded apps are not being assessed by Gatekeeper.")
+                return finding(
+                    check,
+                    .disabled,
+                    String(localized: "Downloaded apps are not being assessed by Gatekeeper.")
+                )
             }
+
         case .fileVault:
             if output.contains("filevault is on") {
-                return finding(check, .enabled, "The startup disk is encrypted with FileVault.")
+                return finding(
+                    check,
+                    .enabled,
+                    String(localized: "The startup disk is encrypted with FileVault.")
+                )
             }
             if output.contains("filevault is off") {
-                return finding(check, .disabled, "The startup disk is not encrypted with FileVault.")
+                return finding(
+                    check,
+                    .disabled,
+                    String(localized: "The startup disk is not encrypted with FileVault.")
+                )
             }
+
         case .firewall:
-            // Block-all mode reports "Firewall is blocking all non-essential
-            // incoming connections. (State = 2)" with no "enabled" wording.
-            if output.contains("firewall is enabled") || output.contains("state = 1") || output.contains("state = 2") {
-                return finding(check, .enabled, "Incoming network connections are filtered.")
+            // Block-all mode can report State = 2 without saying "enabled".
+            if output.contains("firewall is enabled")
+                || output.contains("state = 1")
+                || output.contains("state = 2") {
+                return finding(
+                    check,
+                    .enabled,
+                    String(localized: "Incoming network connections are filtered.")
+                )
             }
-            if output.contains("firewall is disabled") || output.contains("state = 0") {
-                return finding(check, .disabled, "The macOS application firewall is turned off.")
+
+            if output.contains("firewall is disabled")
+                || output.contains("state = 0") {
+                return finding(
+                    check,
+                    .disabled,
+                    String(localized: "The macOS application firewall is turned off.")
+                )
             }
+
         case .systemIntegrityProtection:
             if output.contains("system integrity protection status: enabled") {
-                return finding(check, .enabled, "Protected system locations and processes are restricted.")
+                return finding(
+                    check,
+                    .enabled,
+                    String(localized: "Protected system locations and processes are restricted.")
+                )
             }
             if output.contains("system integrity protection status: disabled") {
-                return finding(check, .disabled, "System Integrity Protection is turned off.")
+                return finding(
+                    check,
+                    .disabled,
+                    String(localized: "System Integrity Protection is turned off.")
+                )
             }
+
         case .xProtect:
             break
         }
@@ -369,39 +430,46 @@ struct ProtectionAudit: Sendable {
         return ProtectionFinding(
             check: check,
             status: .unknown,
-            detail: "The system returned an unrecognized status.",
+            detail: String(localized: "The system returned an unrecognized status."),
             version: nil
         )
     }
 
     static func inspectXProtect() -> ProtectionFinding {
-        let engine = bundleVersion(at: "/Library/Apple/System/Library/CoreServices/XProtect.app")
-        let definitions = bundleVersion(at: "/Library/Apple/System/Library/CoreServices/XProtect.bundle")
+        let engine = bundleVersion(
+            at: "/Library/Apple/System/Library/CoreServices/XProtect.app"
+        )
+        let definitions = bundleVersion(
+            at: "/Library/Apple/System/Library/CoreServices/XProtect.bundle"
+        )
 
         guard engine != nil || definitions != nil else {
             return ProtectionFinding(
                 check: .xProtect,
                 status: .unknown,
-                detail: "PureMac could not confirm the local XProtect installation.",
+                detail: String(localized: "PureMac could not confirm the local XProtect installation."),
                 version: nil
             )
         }
 
         let parts = [
-            engine.map { "engine \($0)" },
-            definitions.map { "definitions \($0)" }
+            engine.map { String(localized: "engine \($0)") },
+            definitions.map { String(localized: "definitions \($0)") }
         ].compactMap { $0 }
-        let version = parts.joined(separator: ", ")
+
+        let version = parts.joined(separator: String(localized: ", "))
+
         return ProtectionFinding(
             check: .xProtect,
             status: .enabled,
-            detail: "Apple's built-in malware protection is installed. Update recency is managed by macOS.",
+            detail: String(localized: "Apple's built-in malware protection is installed. Update recency is managed by macOS."),
             version: version
         )
     }
 
     private static func bundleVersion(at path: String) -> String? {
         guard let bundle = Bundle(path: path) else { return nil }
+
         return bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
             ?? bundle.object(forInfoDictionaryKey: "CFBundleVersion") as? String
     }
@@ -411,6 +479,16 @@ struct ProtectionAudit: Sendable {
         _ status: ProtectionStatus,
         _ detail: String
     ) -> ProtectionFinding {
-        ProtectionFinding(check: check, status: status, detail: detail, version: nil)
+        ProtectionFinding(
+            check: check,
+            status: status,
+            detail: detail,
+            version: nil
+        )
     }
 }
+'''
+path = "/mnt/data/ProtectionAudit.swift"
+with open(path, "w", encoding="utf-8") as f:
+    f.write(code)
+print(f"Created {path} ({len(code.splitlines())} lines)")

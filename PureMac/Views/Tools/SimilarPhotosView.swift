@@ -31,9 +31,9 @@ final class SimilarPhotosViewModel: ObservableObject {
 
     func chooseFolder() {
         let panel = NSOpenPanel()
-        panel.title = "Choose a photo folder"
-        panel.message = "PureMac compares local image thumbnails without changing your photos."
-        panel.prompt = "Scan Photos"
+        panel.title = String(localized: "Choose a photo folder")
+        panel.message = String(localized: "PureMac compares local image thumbnails without changing your photos.")
+        panel.prompt = String(localized: "Scan Photos")
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = false
@@ -211,7 +211,7 @@ struct SimilarPhotosView: View {
         case .cancelled:
             messageState(
                 title: "Scan stopped",
-                message: "No photos were changed. You can scan the folder again at any time.",
+                message: String(localized: "No photos were changed. You can scan the folder again at any time."),
                 systemImage: "stop.circle",
                 tint: .secondary
             )
@@ -219,27 +219,20 @@ struct SimilarPhotosView: View {
     }
 
     private var idleState: some View {
-        CardSurface(padding: 32, elevation: .standard, tint: Tint.pink) {
-            VStack(spacing: 15) {
-                IconTile(systemName: "photo.on.rectangle.angled", tint: Tint.pink, size: 62, corner: 17)
+        CardSurface(padding: 20, elevation: .flat) {
+            VStack(alignment: .leading, spacing: 10) {
                 Text("Choose a folder of photos")
-                    .font(.system(size: 19, weight: .semibold))
-                Text("PureMac builds small local thumbnails, compares their visual structure and color, then groups likely matches for review.")
+                    .font(.system(size: 16, weight: .semibold))
+                Text("Compare local photos by appearance and review likely matches side by side. Photos are never uploaded or deleted.")
                     .font(.system(size: 13))
                     .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: 520)
-                HStack(spacing: 8) {
-                    StatusChip(label: "Review only", systemImage: "eye", tint: Tint.green)
-                    StatusChip(label: "500 photo limit", systemImage: "photo.stack", tint: Tint.pink)
-                    StatusChip(label: "Local files", systemImage: "lock.shield", tint: Tint.blue)
-                }
-                Text("Symbolic links, app packages, hidden files and cloud-only placeholders are skipped. Photos are never uploaded or deleted.")
-                    .font(.system(size: 11.5))
-                    .foregroundStyle(.tertiary)
-                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("Up to 500 photos and 10,000 directory entries per scan. Symbolic links, packages, hidden files, and cloud-only items are skipped.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .frame(maxWidth: .infinity, minHeight: 300)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
@@ -252,7 +245,7 @@ struct SimilarPhotosView: View {
                     VStack(alignment: .leading, spacing: 3) {
                         Text(progressTitle)
                             .font(.system(size: 16, weight: .semibold))
-                        Text(model.progress?.currentURL?.lastPathComponent ?? "Preparing visual comparison")
+                        Text(model.progress?.currentURL?.lastPathComponent ?? String(localized: "Preparing visual comparison"))
                             .font(.system(size: 12))
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
@@ -271,18 +264,18 @@ struct SimilarPhotosView: View {
 
                 HStack(spacing: 8) {
                     StatusChip(
-                        label: "\(model.progress?.entriesVisited ?? 0) items",
+                        label: String(localized: "\(model.progress?.entriesVisited ?? 0) items"),
                         systemImage: "doc.on.doc",
                         tint: Tint.pink
                     )
                     StatusChip(
-                        label: "\(model.progress?.candidatesFound ?? 0) photos",
+                        label: String(localized: "\(model.progress?.candidatesFound ?? 0) photos"),
                         systemImage: "photo",
                         tint: Tint.pink
                     )
                     if let progress = model.progress, progress.photosAnalyzed > 0 {
                         StatusChip(
-                            label: "\(progress.photosAnalyzed) compared",
+                            label: String(localized: "\(progress.photosAnalyzed) compared"),
                             systemImage: "viewfinder",
                             tint: Tint.blue
                         )
@@ -295,11 +288,11 @@ struct SimilarPhotosView: View {
     private var progressTitle: String {
         switch model.progress?.phase {
         case .discovering, .none:
-            return "Finding local photos"
+            return String(localized: "Finding local photos")
         case .analyzing:
-            return "Building visual signatures"
+            return String(localized: "Building visual signatures")
         case .comparing:
-            return "Grouping similar shots"
+            return String(localized: "Grouping similar shots")
         }
     }
 
@@ -343,46 +336,39 @@ struct SimilarPhotosView: View {
     }
 
     private func summaryCard(_ result: SimilarPhotoScanResult) -> some View {
-        CardSurface(padding: 18, elevation: .standard, tint: Tint.pink) {
+        CardSurface(padding: 16, elevation: .flat) {
             HStack(spacing: 20) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("\(result.groups.count)")
-                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                        .font(.system(size: 21, weight: .semibold))
                         .monospacedDigit()
-                        .foregroundStyle(Tint.pink)
                     Text(result.groups.count == 1 ? "similar group" : "similar groups")
                         .font(.system(size: 12.5))
                         .foregroundStyle(.secondary)
                 }
 
                 Divider()
-                    .frame(height: 50)
+                    .frame(height: 38)
 
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(spacing: 8) {
-                        StatusChip(label: "\(result.photosAnalyzed) analyzed", systemImage: "viewfinder", tint: Tint.pink)
-                        StatusChip(label: "\(result.matchedPhotoCount) matched", systemImage: "photo.stack", tint: Tint.blue)
-                    }
-                    HStack(spacing: 8) {
-                        StatusChip(label: Self.format(result.matchedPhotoSize), systemImage: "internaldrive", tint: Tint.purple)
-                        if result.skippedItems > 0 {
-                            StatusChip(label: "\(result.skippedItems) skipped", systemImage: "forward", tint: Tint.orange)
-                        }
-                    }
+                VStack(alignment: .leading, spacing: 5) {
+                    Text("\(result.photosAnalyzed) analyzed · \(result.matchedPhotoCount) matched")
+                        .font(.system(size: 13, weight: .medium))
+                    Text("\(Self.format(result.matchedPhotoSize)) in matched photos · \(result.skippedItems) skipped")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
+                .monospacedDigit()
 
                 Spacer()
 
-                StatusChip(
-                    label: result.isPartial ? "Sample limit reached" : "Scan complete",
-                    systemImage: result.isPartial ? "exclamationmark.triangle" : "checkmark.circle",
-                    tint: result.isPartial ? Tint.orange : Tint.green
-                )
+                if result.isPartial {
+                    StatusChip(label: String(localized: "Sample limit reached"), systemImage: "exclamationmark.triangle", tint: Tint.orange)
+                }
             }
         }
     }
 
-    private func messageState(title: String, message: String, systemImage: String, tint: Color) -> some View {
+    private func messageState(title: LocalizedStringKey, message: String, systemImage: String, tint: Color) -> some View {
         CardSurface(padding: 30, elevation: .standard, tint: tint) {
             VStack(spacing: 13) {
                 IconTile(systemName: systemImage, tint: tint, size: 54, corner: 15)
@@ -431,7 +417,7 @@ private struct SimilarPhotoGroupCard: View {
                     }
                     Spacer()
                     StatusChip(
-                        label: "\(Int((group.similarity * 100).rounded()))% visual score",
+                        label: String(localized: "\(Int((group.similarity * 100).rounded()))% visual score"),
                         systemImage: "viewfinder",
                         tint: Tint.pink
                     )

@@ -16,7 +16,7 @@ enum Catalog {
         [
 
             Target(tool: "Homebrew", paths: [h("Library/Caches/Homebrew")]),
-            Target(tool: "npm", paths: [h(".npm/_cacache")]),
+            Target(tool: "npm", paths: [h(".npm/_cacache"), h(".npm/_logs")]),
             Target(tool: "Yarn", paths: [h("Library/Caches/Yarn"), h(".cache/yarn"), h(".yarn/berry/cache")]),
             Target(tool: "pnpm", paths: [h("Library/pnpm/store"), h(".pnpm-store"), h(".cache/pnpm")]),
             Target(tool: "pip", paths: [h("Library/Caches/pip"), h(".cache/pip")]),
@@ -38,6 +38,11 @@ enum Catalog {
             Target(tool: "NuGet / .NET (~/.nuget — may hold local packages)", paths: [h(".nuget/packages"), h(".local/share/NuGet/http-cache")], selectedByDefault: false),
 
             Target(tool: "Swift Package Manager", paths: [h("Library/Caches/org.swift.swiftpm")]),
+
+            Target(tool: "Puppeteer (browser downloads)", paths: [h(".cache/puppeteer")]),
+            Target(tool: "Playwright (browser downloads)", paths: [h("Library/Caches/ms-playwright"), h(".cache/ms-playwright")]),
+            Target(tool: "node-gyp (cached headers)", paths: [h("Library/Caches/node-gyp"), h(".cache/node-gyp")]),
+            Target(tool: "Electron (download cache)", paths: [h("Library/Caches/electron"), h("Library/Caches/electron-builder")]),
 
             Target(tool: "Docker Desktop", paths: [h("Library/Containers/com.docker.docker/Data/cache"), h("Library/Containers/com.docker.docker/Data/log"), h("Library/Containers/com.docker.docker/Data/tmp"), h("Library/Group Containers/group.com.docker/Caches"), h(".docker/cli-plugins/.cache"), h(".docker/buildx/cache")]),
             Target(tool: "OrbStack", paths: [h(".orbstack/log"), h("Library/Caches/dev.kdrag0n.MacVirt"), h("Library/Logs/OrbStack")]),
@@ -67,6 +72,7 @@ enum Catalog {
             Target(tool: "Ollama (logs/cache)", paths: [h(".ollama/logs"), h("Library/Caches/ollama"), h("Library/Caches/com.electron.ollama")]),
             Target(tool: "LM Studio (logs)", paths: [h(".lmstudio/server-logs")]),
             Target(tool: "Cursor (cache)", paths: [h("Library/Application Support/Cursor/Cache"), h("Library/Application Support/Cursor/CachedData"), h("Library/Application Support/Cursor/logs")]),
+            Target(tool: "Hugging Face (~/.cache/huggingface downloads, re-fetched on demand)", paths: [h(".cache/huggingface/hub"), h(".cache/huggingface/datasets"), h(".cache/huggingface/xet")], selectedByDefault: false),
         ]
     }
 

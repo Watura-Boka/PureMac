@@ -1,6 +1,6 @@
 cask "puremac" do
-  version "3.0.0"
-  sha256 "35019475216a7498a31eca1078212ee5107cb4b522021119796ca524db72798c"
+  version "3.2.0"
+  sha256 "5ba35fde0b60a645d61edacc8a8b8f198625ea91ac3750c60d41efe22a240a50"
 
   url "https://github.com/momenbasel/PureMac/releases/download/v#{version}/PureMac-#{version}.zip"
   name "PureMac"
@@ -13,9 +13,9 @@ cask "puremac" do
 
   # Refresh LaunchServices so the Dock/Launchpad icon updates immediately on
   # (re)install instead of showing a stale cached icon (issue #111).
-  postflight do
-    system_command "/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/LaunchServices.framework/Versions/A/Support/lsregister",
-                   args: ["-f", "#{appdir}/PureMac.app"]
+  postflight_steps do
+    run "/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/LaunchServices.framework/Versions/A/Support/lsregister",
+        args: ["-f", "{{appdir}}/PureMac.app"]
   end
 
   zap trash: [

@@ -116,6 +116,36 @@ final class AppStateTests: XCTestCase {
         XCTAssertEqual(state.scanState, .completed)
     }
 
+    func testManagedDerivedDataRequiresManualSelectionEvenForScheduledCleanup() throws {
+        let state = AppState(performStartupTasks: false)
+        let managedRoot = try XCTUnwrap(XcodeBuildMCPDerivedDataSupport.managedRoots().first)
+        let item = CleanableItem(
+            name: "XcodeBuildMCP: Fixture",
+            path: managedRoot
+                .appendingPathComponent("workspaces/Fixture-\(UUID().uuidString)/DerivedData").path,
+            size: 4_096,
+            category: .xcodeJunk,
+            isSelected: false,
+            lastModified: .distantPast
+        )
+        state.categoryResults[.xcodeJunk] = CategoryResult(category: .xcodeJunk, items: [item], totalSize: item.size)
+        state.scanState = .completed
+
+        XCTAssertFalse(state.isItemSelected(item))
+        XCTAssertEqual(state.totalSelectedSize, 0)
+        state.cleanAll()
+        XCTAssertEqual(state.scanState, .completed)
+        state.cleanAll(scheduled: true)
+        XCTAssertEqual(state.scanState, .completed)
+        XCTAssertEqual(state.categoryResults[.xcodeJunk]?.items.map(\.id), [item.id])
+
+        state.toggleItem(item)
+        XCTAssertTrue(state.isItemSelected(item))
+        XCTAssertEqual(state.totalSelectedSize, item.size)
+        state.toggleItem(item)
+        XCTAssertFalse(state.isItemSelected(item))
+    }
+
     func testScheduledScanWaitsForActiveOperations() {
         let state = AppState(performStartupTasks: false)
         state.scanState = .cleaning(progress: 0.2)

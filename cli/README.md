@@ -107,7 +107,7 @@ Without `--force`, a noninteractive cleanup does not delete anything.
 
 ## What gets scanned
 
-Developer cleanup covers precise cache locations for Homebrew, npm, Yarn, pnpm, pip, Cargo, Go, CocoaPods, Maven, Gradle, Poetry, uv, Bun, Deno, mise, Flutter/Dart, NuGet, Swift Package Manager, editor caches, and supported Docker/OrbStack cache paths. It does not invoke a broad Docker prune operation.
+Developer cleanup covers precise cache locations for Homebrew, npm, Yarn, pnpm, pip, Cargo, Go, CocoaPods, Maven, Gradle, Poetry, uv, Bun, Deno, mise, Flutter/Dart, NuGet, Swift Package Manager, Puppeteer and Playwright browser downloads, node-gyp headers, Electron download caches, editor caches, and supported Docker/OrbStack cache paths. It does not invoke a broad Docker prune operation.
 
 Project cleanup finds artifacts such as `node_modules`, `.next`, `.nuxt`, `.turbo`, `.svelte-kit`, `target`, `.build`, `DerivedData`, `Pods`, `.venv`, `__pycache__`, and test/tool caches. Source directories are not artifact targets. Review virtual environments and dependencies before removing them; recreating them may require downloads.
 

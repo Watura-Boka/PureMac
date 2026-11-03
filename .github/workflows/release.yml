@@ -340,6 +340,23 @@ jobs:
                 echo ""
                 echo "Protection checks inspect macOS settings; they are not a malware scanner. App updates cover Homebrew casks. Similar Photos groups images for manual review."
                 echo ""
+              elif [[ "${VERSION}" == "3.1.0" ]]; then
+                echo "### What changed"
+                echo ""
+                echo "- Simplified Chinese completed and runtime strings routed through the catalog (#180), German (#167) and Italian (#174) added; every interface string is now localizable."
+                echo "- A Settings page in the sidebar with appearance, language and Full Disk Access in one place; the standard Settings window shows the same page (#169)."
+                echo "- Check for app releases from Settings, user-initiated only; the unused Sparkle framework no longer ships (#170)."
+                echo "- Startup and background items collapse, and Performance shows app CPU and memory usage on demand (#172, #173)."
+                echo "- XcodeBuildMCP and MobileBuildMCP DerivedData in Xcode Junk, opt-in and Trash-only (#162)."
+                echo "- The Protection check recognizes the firewall's block-all mode (#183), and the Homebrew cask no longer warns about postflight (#182)."
+                echo ""
+              elif [[ "${VERSION}" == "3.2.0" ]]; then
+                echo "- Added Apple Features with shortcuts and instructions for Siri, Apple Intelligence, image generation, Writing Tools, ChatGPT, summaries, and privacy settings. Changes are completed manually in macOS."
+                echo "- Inspect Apple model, screen saver, music content, and device backup storage. Protected models and system apps are not removed."
+                echo "- Review individual iPhone and iPad backups and move selected completed backups to Trash after confirmation and fresh checks."
+                echo "- Fixed Ollama and LM Studio cleanup with strict path checks and user-level removal; downloaded models remain excluded."
+                echo "- Simplified Overview and navigation, reduced decoration, and added full paths and removal methods to category cleanup confirmation."
+                echo ""
               elif [[ "${VERSION}" == "2.9.8" ]]; then
                 echo "### What changed"
                 echo ""
