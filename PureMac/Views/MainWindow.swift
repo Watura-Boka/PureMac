@@ -2,11 +2,13 @@ import SwiftUI
 
 struct MainWindow: View {
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var theme: ThemeManager
     @ObservedObject private var permission = PermissionCoordinator.shared
     @State private var selectedSection: AppSection? = .cleaning(.smartScan)
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @State private var cleanupExpanded = false
     @State private var advancedToolsExpanded = false
+    @State private var showAppearance = false
     @FocusState private var focusedSection: AppSection?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.colorScheme) private var colorScheme
@@ -30,7 +32,7 @@ struct MainWindow: View {
     var body: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
             sidebar
-                .navigationSplitViewColumnWidth(min: 232, ideal: 248, max: 288)
+                .navigationSplitViewColumnWidth(min: 232, ideal: 252, max: 288)
         } detail: {
             detailContainer
         }
@@ -84,13 +86,15 @@ struct MainWindow: View {
         }
     }
 
+    // MARK: - Sidebar
+
     private var sidebar: some View {
         List {
             Section {
                 navRow(
                     section: .cleaning(.smartScan),
                     label: "Overview",
-                    icon: "internaldrive",
+                    icon: "house",
                     tint: Tint.accent,
                     badge: dashboardBadge,
                     emphasized: true
@@ -109,41 +113,8 @@ struct MainWindow: View {
                     tint: Tint.cyan,
                     badge: nil
                 )
-                navRow(
-                    section: .appleFeatures,
-                    label: "Apple Features",
-                    icon: "switch.2",
-                    tint: Tint.accent,
-                    badge: nil
-                )
             } header: {
-                sectionLabel("Care")
-            }
-
-            Section {
-                navRow(
-                    section: .apps,
-                    label: "Uninstaller",
-                    icon: "app.dashed",
-                    tint: Tint.blue,
-                    badge: appState.installedApps.isEmpty ? nil : "\(appState.installedApps.count)"
-                )
-                navRow(
-                    section: .appUpdates,
-                    label: "App Updates",
-                    icon: "arrow.triangle.2.circlepath",
-                    tint: Tint.accent,
-                    badge: nil
-                )
-                navRow(
-                    section: .orphans,
-                    label: "Leftovers",
-                    icon: "doc.questionmark",
-                    tint: Tint.orange,
-                    badge: appState.orphanedFiles.isEmpty ? nil : "\(appState.orphanedFiles.count)"
-                )
-            } header: {
-                sectionLabel("Applications")
+                sectionLabel("Maintain")
             }
 
             Section {
@@ -168,66 +139,59 @@ struct MainWindow: View {
                     tint: Tint.pink,
                     badge: nil
                 )
-                DisclosureGroup(isExpanded: $cleanupExpanded) {
-                    ForEach(Self.cleanupCategories) { category in
-                        navRow(
-                            section: .cleaning(category),
-                            label: LocalizedStringKey(category.rawValue),
-                            icon: category.icon,
-                            tint: category.color,
-                            badge: sizeBadge(for: category)
-                        )
-                    }
-                } label: {
-                    HStack(spacing: 10) {
-                        Image(systemName: "trash.slash")
-                            .font(.system(size: 16))
-                            .foregroundStyle(.secondary)
-                            .frame(width: 20)
-                        Text("Cleanup")
-                            .font(.system(size: 12.5, weight: .medium))
-                            .foregroundStyle(sidebarLabelColor)
-                    }
-                    .frame(minHeight: 34)
-                    .contentShape(Rectangle())
-                }
-                .tint(.secondary)
-                .listRowInsets(rowInsets)
-                .listRowSeparator(.hidden)
-                .listRowBackground(Color.clear)
-                DisclosureGroup(isExpanded: $advancedToolsExpanded) {
-                    ForEach(Self.advancedCategories) { category in
-                        navRow(
-                            section: .cleaning(category),
-                            label: LocalizedStringKey(category.rawValue),
-                            icon: category.icon,
-                            tint: category.color,
-                            badge: sizeBadge(for: category)
-                        )
-                    }
-                } label: {
-                    HStack(spacing: 10) {
-                        Image(systemName: "wrench.and.screwdriver")
-                            .font(.system(size: 16))
-                            .foregroundStyle(.secondary)
-                            .frame(width: 20)
-                        Text("Developer Cleanup")
-                            .font(.system(size: 12.5, weight: .medium))
-                            .foregroundStyle(sidebarLabelColor)
-                    }
-                    .frame(minHeight: 34)
-                    .contentShape(Rectangle())
-                }
-                .tint(.secondary)
-                .listRowInsets(rowInsets)
-                .listRowSeparator(.hidden)
-                .listRowBackground(Color.clear)
+                disclosureRow(
+                    title: "Cleanup",
+                    icon: "trash.slash",
+                    isExpanded: $cleanupExpanded,
+                    categories: Self.cleanupCategories
+                )
+                disclosureRow(
+                    title: "Developer Cleanup",
+                    icon: "wrench.and.screwdriver",
+                    isExpanded: $advancedToolsExpanded,
+                    categories: Self.advancedCategories
+                )
             } header: {
-                sectionLabel("Tools")
+                sectionLabel("Free up space")
+            }
+
+            Section {
+                navRow(
+                    section: .apps,
+                    label: "Uninstaller",
+                    icon: "app.dashed",
+                    tint: Tint.blue,
+                    badge: appState.installedApps.isEmpty ? nil : "\(appState.installedApps.count)"
+                )
+                navRow(
+                    section: .appUpdates,
+                    label: "App Updates",
+                    icon: "arrow.triangle.2.circlepath",
+                    tint: Tint.accent,
+                    badge: nil
+                )
+                navRow(
+                    section: .orphans,
+                    label: "Leftovers",
+                    icon: "doc.questionmark",
+                    tint: Tint.orange,
+                    badge: appState.orphanedFiles.isEmpty ? nil : "\(appState.orphanedFiles.count)"
+                )
+                navRow(
+                    section: .appleFeatures,
+                    label: "Apple Features",
+                    icon: "switch.2",
+                    tint: Tint.accent,
+                    badge: nil
+                )
+            } header: {
+                sectionLabel("Apps")
             }
         }
+        // Rebuild rows when the colour theme changes so every tint refreshes.
+        .id(theme.themeID)
         .listStyle(.sidebar)
-        .environment(\.defaultMinListRowHeight, 35)
+        .environment(\.defaultMinListRowHeight, 34)
         .scrollContentBackground(.hidden)
         .background(sidebarBackground)
         .navigationTitle("PureMac")
@@ -243,9 +207,44 @@ struct MainWindow: View {
                 }
             }
         }
-        .safeAreaInset(edge: .bottom) {
+        .safeAreaInset(edge: .bottom, spacing: 0) {
             sidebarFooter
         }
+    }
+
+    private func disclosureRow(
+        title: LocalizedStringKey,
+        icon: String,
+        isExpanded: Binding<Bool>,
+        categories: [CleaningCategory]
+    ) -> some View {
+        DisclosureGroup(isExpanded: isExpanded) {
+            ForEach(categories) { category in
+                navRow(
+                    section: .cleaning(category),
+                    label: LocalizedStringKey(category.rawValue),
+                    icon: category.icon,
+                    tint: category.color,
+                    badge: sizeBadge(for: category)
+                )
+            }
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: icon)
+                    .font(.system(size: 15))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 20)
+                Text(title)
+                    .font(.system(size: 13, weight: .regular))
+                    .foregroundStyle(sidebarLabelColor)
+            }
+            .frame(minHeight: 34)
+            .contentShape(Rectangle())
+        }
+        .tint(.secondary)
+        .listRowInsets(rowInsets)
+        .listRowSeparator(.hidden)
+        .listRowBackground(Color.clear)
     }
 
     private var rowInsets: EdgeInsets {
@@ -254,9 +253,11 @@ struct MainWindow: View {
 
     private func sectionLabel(_ text: LocalizedStringKey) -> some View {
         Text(text)
-            .font(.system(size: 11, weight: .semibold))
-            .foregroundStyle(.secondary)
+            .font(Typo.display(12, weight: .medium))
+            .italic()
+            .foregroundStyle(Tint.brass)
             .textCase(nil)
+            .padding(.top, 4)
     }
 
     private func navRow(
@@ -274,6 +275,8 @@ struct MainWindow: View {
                 label: label,
                 icon: icon,
                 tint: tint,
+                accent: Tint.accent,
+                brass: Tint.brass,
                 badge: badge,
                 isSelected: selectedSection == section,
                 emphasized: emphasized
@@ -294,10 +297,6 @@ struct MainWindow: View {
             .cleaning(.smartScan),
             .protection,
             .performance,
-            .appleFeatures,
-            .apps,
-            .appUpdates,
-            .orphans,
             .spaceExplorer,
             .duplicates,
             .similarPhotos
@@ -308,6 +307,7 @@ struct MainWindow: View {
         if advancedToolsExpanded {
             sections.append(contentsOf: Self.advancedCategories.map(AppSection.cleaning))
         }
+        sections.append(contentsOf: [.apps, .appUpdates, .orphans, .appleFeatures])
         sections.append(.settings)
         return sections
     }
@@ -363,41 +363,97 @@ struct MainWindow: View {
     }
 
     private var sidebarBackground: some View {
-        Color(nsColor: colorScheme == .dark ? .underPageBackgroundColor : .windowBackgroundColor)
+        Palette.sidebar
             .overlay(alignment: .trailing) {
                 Rectangle()
-                    .fill(Color.primary.opacity(0.07))
+                    .fill(Palette.hairline)
                     .frame(width: 0.5)
             }
             .ignoresSafeArea()
     }
 
+    // MARK: - Footer
+
+    private var usedFraction: Double {
+        let total = appState.diskInfo.totalSpace
+        guard total > 0 else { return 0 }
+        return Double(max(0, total - appState.diskInfo.freeSpace)) / Double(total)
+    }
+
     private var sidebarFooter: some View {
-        Button {
-            selectSection(.settings)
-        } label: {
-            SidebarNavRow(
-                label: "Settings",
-                icon: "gearshape.fill",
-                tint: Tint.accent,
-                badge: nil,
-                isSelected: selectedSection == .settings,
-                emphasized: false
-            )
+        VStack(alignment: .leading, spacing: 10) {
+            if appState.diskInfo.totalSpace > 0 {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text("Storage")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Text(String(format: String(localized: "%@ free"), appState.diskInfo.formattedFree))
+                            .font(.system(size: 11, weight: .semibold))
+                            .monospacedDigit()
+                    }
+                    GildedProgressBar(
+                        value: usedFraction,
+                        height: 4,
+                        tint: usedFraction >= 0.9 ? Tint.orange : Tint.accent,
+                        showsSheen: false
+                    )
+                }
+            }
+
+            HStack(spacing: 4) {
+                Button {
+                    selectSection(.settings)
+                } label: {
+                    SidebarNavRow(
+                        label: "Settings",
+                        icon: "gearshape",
+                        tint: Tint.accent,
+                        accent: Tint.accent,
+                        brass: Tint.brass,
+                        badge: nil,
+                        isSelected: selectedSection == .settings,
+                        emphasized: false
+                    )
+                }
+                .buttonStyle(.plain)
+                .focused($focusedSection, equals: .settings)
+                .accessibilityIdentifier("sidebar.settings")
+                .accessibilityAddTraits(selectedSection == .settings ? .isSelected : [])
+
+                Button {
+                    showAppearance.toggle()
+                } label: {
+                    Image(systemName: "paintpalette")
+                        .font(.system(size: 14))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 34, height: 34)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help("Color theme and appearance")
+                .accessibilityLabel("Color theme and appearance")
+                .popover(isPresented: $showAppearance, arrowEdge: .top) {
+                    AppearancePanel()
+                        .environmentObject(theme)
+                }
+            }
         }
-        .buttonStyle(.plain)
-        .focused($focusedSection, equals: .settings)
-        .accessibilityIdentifier("sidebar.settings")
-        .accessibilityAddTraits(selectedSection == .settings ? .isSelected : [])
         .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(.regularMaterial)
-        .overlay(alignment: .top) { Divider() }
+        .padding(.top, 12)
+        .padding(.bottom, 10)
+        .background(Palette.sidebar)
+        .overlay(alignment: .top) {
+            Rectangle().fill(Palette.hairline).frame(height: 0.5)
+        }
     }
 
     private var sidebarLabelColor: Color {
-        colorScheme == .dark ? Color.white.opacity(0.90) : Color.black.opacity(0.84)
+        colorScheme == .dark ? Color.white.opacity(0.90) : Color.black.opacity(0.82)
     }
+
+    // MARK: - Detail
 
     @ViewBuilder
     private var detailContainer: some View {
@@ -410,9 +466,10 @@ struct MainWindow: View {
             }
             detailView
                 .id(selectedSection)
-                .transition(reduceMotion ? .opacity : .opacity.combined(with: .offset(y: 6)))
+                .id(theme.themeID)
+                .transition(reduceMotion ? .opacity : .opacity.combined(with: .offset(y: 8)))
         }
-        .animation(reduceMotion ? nil : .easeOut(duration: 0.18), value: selectedSection)
+        .animation(reduceMotion ? nil : MotionTokens.settle, value: selectedSection)
         .animation(reduceMotion ? nil : MotionTokens.gentle, value: appState.fdaBannerDismissed)
         .animation(reduceMotion ? nil : MotionTokens.gentle, value: appState.hasFullDiskAccess)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -491,19 +548,23 @@ struct MainWindow: View {
         .padding(.vertical, 10)
         .background {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Tint.orange.opacity(0.075))
+                .fill(Tint.orange.opacity(0.08))
         }
         .overlay {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .strokeBorder(Tint.orange.opacity(0.18), lineWidth: 0.5)
+                .strokeBorder(Tint.orange.opacity(0.22), lineWidth: 0.5)
         }
     }
 }
+
+// MARK: - Sidebar row
 
 private struct SidebarNavRow: View {
     let label: LocalizedStringKey
     let icon: String
     let tint: Color
+    let accent: Color
+    let brass: Color
     let badge: String?
     let isSelected: Bool
     let emphasized: Bool
@@ -515,32 +576,41 @@ private struct SidebarNavRow: View {
     var body: some View {
         HStack(spacing: 10) {
             Image(systemName: icon)
-                .font(.system(size: 16, weight: isSelected ? .medium : .regular))
-                .foregroundStyle(isSelected ? Tint.accent : .secondary)
+                .font(.system(size: 15, weight: isSelected ? .medium : .regular))
+                .foregroundStyle(isSelected ? accent : .secondary)
                 .frame(width: 20)
                 .accessibilityHidden(true)
             Text(label)
-                .font(.system(size: 12.5, weight: isSelected || emphasized ? .semibold : .regular))
+                .font(.system(size: 13, weight: isSelected || emphasized ? .semibold : .regular))
                 .foregroundStyle(labelColor)
                 .lineLimit(1)
             Spacer(minLength: 5)
             if let badge {
                 Text(badge)
-                    .font(.system(size: 9.5, weight: .semibold))
+                    .font(.system(size: 10, weight: .semibold))
                     .monospacedDigit()
-                    .foregroundStyle(isSelected ? tint : .secondary)
-                    .padding(.horizontal, 6)
+                    .foregroundStyle(isSelected ? accent : .secondary)
+                    .padding(.horizontal, 7)
                     .padding(.vertical, 2)
-                    .background(Capsule().fill(Color.primary.opacity(0.05)))
+                    .background(Capsule().fill(Color.primary.opacity(0.06)))
             }
         }
         .frame(maxWidth: .infinity, minHeight: 34, alignment: .leading)
-        .padding(.horizontal, 8)
+        .padding(.horizontal, 10)
         .background {
-            RoundedRectangle(cornerRadius: 9, style: .continuous)
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .fill(rowFill)
         }
-        .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+        .overlay(alignment: .leading) {
+            // Brass marker: grows from the centre when the row is selected.
+            Capsule()
+                .fill(brass)
+                .frame(width: 2.5, height: 16)
+                .scaleEffect(y: isSelected ? 1 : 0.1, anchor: .center)
+                .opacity(isSelected ? 1 : 0)
+                .offset(x: 1)
+        }
+        .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         .animation(reduceMotion ? nil : MotionTokens.snappy, value: hovering)
         .animation(reduceMotion ? nil : MotionTokens.snappy, value: isSelected)
         .onHover { hovering = $0 }
@@ -548,16 +618,15 @@ private struct SidebarNavRow: View {
 
     private var rowFill: Color {
         if isSelected {
-            return Tint.accent.opacity(colorScheme == .dark ? 0.16 : 0.10)
+            return accent.opacity(colorScheme == .dark ? 0.20 : 0.11)
         }
         if hovering {
-            return Color.primary.opacity(0.035)
+            return Color.primary.opacity(0.045)
         }
         return .clear
     }
 
     private var labelColor: Color {
-        colorScheme == .dark ? Color.white.opacity(0.91) : Color.black.opacity(0.84)
+        colorScheme == .dark ? Color.white.opacity(0.91) : Color.black.opacity(0.82)
     }
 }
-
