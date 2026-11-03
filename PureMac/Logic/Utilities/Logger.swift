@@ -25,9 +25,7 @@ enum LogLevel: String, Sendable, CaseIterable {
     }
 }
 
-@MainActor
 final class Logger: ObservableObject {
-
     static let shared = Logger()
 
     @Published private(set) var entries: [LogEntry] = []
@@ -41,7 +39,7 @@ final class Logger: ObservableObject {
         self.osLogger = os.Logger(subsystem: subsystem, category: "general")
     }
 
-    nonisolated func log(_ message: String, level: LogLevel = .info, source: String = #function) {
+    func log(_ message: String, level: LogLevel = .info, source: String = #function) {
         osLogger.log(level: level.osLogType, "\(message, privacy: .public)")
 
         let entry = LogEntry(message: message, level: level, source: source)
