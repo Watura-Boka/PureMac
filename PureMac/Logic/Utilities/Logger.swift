@@ -26,9 +26,9 @@ enum LogLevel: String, Sendable, CaseIterable {
 }
 
 final class Logger: ObservableObject {
-    static let shared = Logger()
+    nonisolated static let shared = Logger()
 
-    @Published private(set) var entries: [LogEntry] = []
+    @MainActor @Published private(set) var entries: [LogEntry] = []
 
     private static let maxEntries = 1000
 
@@ -48,6 +48,7 @@ final class Logger: ObservableObject {
         }
     }
 
+    @MainActor
     private func append(_ entry: LogEntry) {
         entries.append(entry)
         if entries.count > Self.maxEntries {
